@@ -6,7 +6,7 @@ import socket
 # Create server workflow
 # Open socket, bind to port, then wait for connection.
 server = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-server.bind(("fe80::b651:d81e:e8a3:df50%12", 9999))     # Knows link-local address too!
+server.bind(("::1", 9999))     # Knows link-local address too!
 
 server.listen()
 
