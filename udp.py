@@ -86,7 +86,6 @@ def parse(data):
     packet['udp_length'] = (data[UDP_LEN_OFF] << 8) + data[UDP_LEN_OFF + 1]
     packet['UDP_checksum'] = (data[UDP_CHECKSUM_OFF] << 8) + data[UDP_CHECKSUM_OFF + 1]
     packet['data'] = ''.join(map(chr, [data[DATA_OFF + x] for x in range(0, packet['udp_length'] - 8)]))
-
     return packet
 
 
@@ -112,33 +111,47 @@ def udp_send(data, dest_addr, src_addr=('::1', 9999)):
 
     udp_length = 8 + data_len
 
+    ver = 6 << 4
+    traffic = 0
+    flow = 0
+    hl = 64
+    ip_header = struct.pack('!BBHHBB', ver, traffic, flow, udp_length, protocol, hl)
+    ip_header += src_ip + dest_ip
+    print("IP header: ", ip_header)
+
     checksum = 0
-    pseudo_header = struct.pack('!IBBBH', udp_length, zero, zero, zero, protocol, )
+    pseudo_header = struct.pack('!IBBBH', udp_length, zero, zero, zero, protocol)
     pseudo_header = src_ip + dest_ip + pseudo_header
+    print("Pseudo header: ", pseudo_header)
     udp_header = struct.pack('!4H', src_port, dest_port, udp_length, checksum)
-    checksum = checksum_func(pseudo_header + udp_header + data)
+    checksum = calc_checksum(pseudo_header + udp_header + data)
     udp_header = struct.pack('!4H', src_port, dest_port, udp_length, checksum)
+
     with socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_UDP) as s:
-        print(udp_header)
-        print(data)
-        print((dest_ip, dest_port))
-        s.sendto(udp_header + data, dest_addr)
+        print("UDP header: ", udp_header)
+        print("Data: ", data)
+        print("Address: ", dest_addr)
+        packet = ip_header + udp_header + data
+        print("Packet: ", packet)
+        s.sendto(packet, dest_addr)
 
 
-def checksum_func(data):
-    checksum = 0
-    data_len = len(data)
-    if (data_len % 2):
-        data_len += 1
-        data += struct.pack('!B', 0)
+def calc_checksum(packet):
+    total = 0
 
-    for i in range(0, data_len, 2):
-        w = (data[i] << 8) + (data[i + 1])
-        checksum += w
+    # Add up 16-bit words
+    num_words = len(packet) // 2
+    for chunk in struct.unpack("!%sH" % num_words, packet[0:num_words*2]):
+        total += chunk
 
-    checksum = (checksum >> 16) + (checksum & 0xFFFF)
-    checksum = ~checksum & 0xFFFF
-    return checksum
+    # Add any left over byte
+    if len(packet) % 2:
+        total += ord(packet[-1]) << 8
+
+    # Fold 32-bits into 16-bits
+    total = (total >> 16) + (total & 0xffff)
+    total += total >> 16
+    return (~total + 0x10000 & 0xffff)
 
 def udp_recv(addr, size):
     zero = 0
@@ -174,5 +187,6 @@ def verify_checksum(data, checksum):
 
 
 if __name__ == '__main__':
-    server_a = ('::1', 8888)
-    udp_send("Hello, this is spaceship!", server_a)
+    dest_a = ('::2', 9999, 0, 0)
+    self_a = ('::1', 9999, 0, 0)
+    udp_send("Hello, this is spaceship!", dest_a)
