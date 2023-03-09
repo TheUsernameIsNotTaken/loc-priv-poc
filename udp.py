@@ -272,7 +272,8 @@ def udp_send(data, dest_addr, src_addr):
     checksum = calc_checksum(pseudo_header + udp_header + data)
     udp_header = struct.pack('!4H', src_port, dest_port, udp_length, checksum)
 
-    with socket.socket(socket.AF_INET6, socket.SOCK_RAW, socket.IPPROTO_UDP) as s:
+    #, socket.IPPROTO_UDP
+    with socket.socket(socket.AF_INET6, socket.SOCK_RAW) as s:
         print("UDP header: ", udp_header)
         print("Data: ", data)
         print("Address: ", dest_addr)
@@ -332,4 +333,4 @@ def verify_checksum(data, checksum):
 if __name__ == '__main__':
     dest_a = ('1111::2', 9999, 0, 0)
     self_a = ('1111::1', 9999, 0, 0)
-    udp_send("Hello, this is spaceship!", dest_a)
+    udp_send("Hello, this is spaceship!", dest_a, self_a)
