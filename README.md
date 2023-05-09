@@ -2,6 +2,8 @@
 
 Lokalicáziós adatok titkosságát megörző kommunikációs modell demonstráció Python használatával.
 
+Megoldási javaslat jelenleg elvetve.
+
 # A következő elvárásokat támasztom a PoC felé
   1. Legyen képes két részegysége között üzenetet küldeni és fogadni.
   2. Ezt lehetőleg két különálló eszköz között is el lehessen érni nála.
